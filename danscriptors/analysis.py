@@ -10,7 +10,7 @@ import math
 
 
 # @lru_cache(128, typed=False)
-def harmonic_features(
+def harmonic_index(
         sourcefile,
         offset=0.0,
         duration=120.0,
@@ -20,7 +20,7 @@ def harmonic_features(
         hop_length=1024,
         pitch_median=20,  # how many frames for running media?
         high_pass_f=40.0,
-        low_pass_f=3000.0,
+        low_pass_f=4000.0,
         pitch_floor=-60,
         debug=False,
         cached=True,
@@ -59,7 +59,7 @@ def harmonic_features(
 
     metadata = dict(
         key=key,
-        analysis=argset,
+        args=argset,
         metadatafile=str(metadatafile),
     )
     y, sr = sfio.load(
@@ -83,15 +83,16 @@ def harmonic_features(
     # Resynthesize the harmonic component as waveforms
     y_harmonic = librosa.istft(H)
     harmonicfile = str(output_dir/key) + ".harmonic.wav"
-    sfio.save(
-         harmonicfile,
-         y_harmonic, sr=sr, norm=True)
+    # sfio.save(
+    #     harmonicfile,
+    #     y_harmonic, sr=sr, norm=True)
     metadata["harmonicfile"] = harmonicfile
 
     # Now, power spectrogram
     H_mag, H_phase = librosa.magphase(H)
-    y_harmonic_rms = librosa.feature.rmse(S=librosa.magphase(P)[0])
-    y_rms = librosa.feature.rmse(S=librosa.magphase(D)[0])
+    y_harmonic_rms = librosa.feature.rmse(
+        S=H_mag
+    )
 
     H_pitch, H_pitch_mag = librosa.piptrack(
         S=H_mag, sr=sr, fmin=high_pass_f, fmax=low_pass_f,
@@ -110,8 +111,15 @@ def harmonic_features(
     # How much energy in pitches?
     y_pitch_mag_rms = librosa.feature.rmse(S=H_pitch_mag)
 
-    return H_pitch, H_pitch_mag
-  #  json.dump(metadata, metadatafile.open("w"))
+    json.dump(metadata, metadatafile.open("w"))
 
-#return metadata
+    peak_f = None
+    peak_mag_sq = None
 
+    return dict(
+        metadata=metadata,
+        peak_f=peak_f,
+        peak_mag_sq=peak_mag_sq,
+        H_pitch=H_pitch,
+        H_phase=H_phase,
+    )
