@@ -83,9 +83,9 @@ def harmonic_features(
     # Resynthesize the harmonic component as waveforms
     y_harmonic = librosa.istft(H)
     harmonicfile = str(output_dir/key) + ".harmonic.wav"
-    # sfio.save(
-    #     harmonicfile,
-    #     y_harmonic, sr=sr, norm=True)
+    sfio.save(
+         harmonicfile,
+         y_harmonic, sr=sr, norm=True)
     metadata["harmonicfile"] = harmonicfile
 
     # Now, power spectrogram
@@ -110,6 +110,8 @@ def harmonic_features(
     # How much energy in pitches?
     y_pitch_mag_rms = librosa.feature.rmse(S=H_pitch_mag)
 
-    json.dump(metadata, metadatafile.open("w"))
+    return H_pitch, H_pitch_mag
+  #  json.dump(metadata, metadatafile.open("w"))
 
-    return metadata
+#return metadata
+
