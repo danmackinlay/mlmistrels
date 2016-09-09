@@ -13,6 +13,7 @@ def compress_single_slice(freqs, mags, n_peaks = 16):
   return np.dstack((freqs[ind], mags[ind]))[0]
 
 # turn output from danscriptors.analysis.harmonic_features into compressed peak data
+# (see above for format)
 def compress(H_pitch, H_pitch_mag, n_peaks = 16):
   # take the transpoe to make things easier
   H_pitch = H_pitch.T
