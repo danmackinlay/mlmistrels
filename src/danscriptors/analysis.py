@@ -10,7 +10,7 @@ import math
 
 
 # @lru_cache(128, typed=False)
-def harmonic_features(
+def harmonic_index(
         sourcefile,
         offset=0.0,
         duration=120.0,
@@ -20,10 +20,11 @@ def harmonic_features(
         hop_length=1024,
         pitch_median=20,  # how many frames for running media?
         high_pass_f=40.0,
-        low_pass_f=3000.0,
+        low_pass_f=4000.0,
         pitch_floor=-60,
         debug=False,
         cached=True,
+        n_pitches=16,
         **kwargs):
     """
     Index spectral peaks
@@ -44,6 +45,7 @@ def harmonic_features(
         low_pass_f=low_pass_f,
         pitch_median=pitch_median,
         pitch_floor=pitch_floor,
+        n_pitches=n_pitches,
     )
     sourcefile = Path(sourcefile).resolve()
     if output_dir is None:
@@ -59,7 +61,7 @@ def harmonic_features(
 
     metadata = dict(
         key=key,
-        analysis=argset,
+        args=argset,
         metadatafile=str(metadatafile),
     )
     y, sr = sfio.load(
@@ -90,13 +92,19 @@ def harmonic_features(
 
     # Now, power spectrogram
     H_mag, H_phase = librosa.magphase(H)
-    y_harmonic_rms = librosa.feature.rmse(S=librosa.magphase(P)[0])
-    y_rms = librosa.feature.rmse(S=librosa.magphase(D)[0])
+    y_harmonic_rms = librosa.feature.rmse(
+        S=H_mag
+    )
 
     H_pitch, H_pitch_mag = librosa.piptrack(
         S=H_mag, sr=sr, fmin=high_pass_f, fmax=low_pass_f,
         threshold=10**(pitch_floor/20.0))
 
+    H_pitch_amp = np.real(H_pitch_mag**2)
+
+    pitch_mag_floor = np.sort(H_pitch_amp, axis=0)[:, n_pitches:n_pitches+1]
+    pitch_mag_mask = features['H_pitch_amp']>pitch_mag_floor
+    
     if debug:
         plt.figure()
         specshow(
@@ -112,4 +120,13 @@ def harmonic_features(
 
     json.dump(metadata, metadatafile.open("w"))
 
-    return metadata
+    peak_f = None
+    peak_mag_sq = None
+
+    return dict(
+        metadata=metadata,
+        peak_f=peak_f,
+        peak_mag_sq=peak_mag_sq,
+        H_pitch=H_pitch,
+        H_pitch_amp=H_pitch_amp,
+    )
