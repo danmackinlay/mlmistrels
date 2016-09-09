@@ -4,6 +4,7 @@ import numpy as np
 import json
 from . import basicfilter
 from . import sfio
+from .util import compress
 # from functools import lru_cache
 from scipy.ndimage import median_filter
 import math
@@ -24,7 +25,7 @@ def harmonic_index(
         pitch_floor=-60,
         debug=False,
         cached=True,
-        n_pitches=16,
+        n_peaks=16,
         **kwargs):
     """
     Index spectral peaks
@@ -45,7 +46,7 @@ def harmonic_index(
         low_pass_f=low_pass_f,
         pitch_median=pitch_median,
         pitch_floor=pitch_floor,
-        n_pitches=n_pitches,
+        n_peaks=n_peaks,
     )
     sourcefile = Path(sourcefile).resolve()
     if output_dir is None:
@@ -85,9 +86,9 @@ def harmonic_index(
     # Resynthesize the harmonic component as waveforms
     y_harmonic = librosa.istft(H)
     harmonicfile = str(output_dir/key) + ".harmonic.wav"
-    # sfio.save(
-    #     harmonicfile,
-    #     y_harmonic, sr=sr, norm=True)
+    sfio.save(
+         harmonicfile,
+         y_harmonic, sr=sr, norm=True)
     metadata["harmonicfile"] = harmonicfile
 
     # Now, power spectrogram
@@ -102,9 +103,9 @@ def harmonic_index(
 
     H_pitch_amp = np.real(H_pitch_mag**2)
 
-    pitch_mag_floor = np.sort(H_pitch_amp, axis=0)[:, n_pitches:n_pitches+1]
-    pitch_mag_mask = features['H_pitch_amp']>pitch_mag_floor
-    
+    # pitch_mag_floor = np.sort(H_pitch_amp, axis=0)[:, n_peaks:n_peaks+1]
+    # pitch_mag_mask = features['H_pitch_amp']>pitch_mag_floor
+
     if debug:
         plt.figure()
         specshow(
@@ -118,15 +119,9 @@ def harmonic_index(
     # How much energy in pitches?
     y_pitch_mag_rms = librosa.feature.rmse(S=H_pitch_mag)
 
-    json.dump(metadata, metadatafile.open("w"))
-
-    peak_f = None
-    peak_mag_sq = None
+    peaks = compress(H_pitch, H_pitch_mag, n_peaks=n_peaks)
 
     return dict(
         metadata=metadata,
-        peak_f=peak_f,
-        peak_mag_sq=peak_mag_sq,
-        H_pitch=H_pitch,
-        H_pitch_amp=H_pitch_amp,
+        peaks=peaks,
     )
