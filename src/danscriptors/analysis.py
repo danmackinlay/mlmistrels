@@ -18,8 +18,8 @@ def harmonic_features(
         output_dir=None,
         n_fft=4096,
         hop_length=1024,
-        pitch_median=20,  # how many frames?
-        high_pass_f=80.0,
+        pitch_median=20,  # how many frames for running media?
+        high_pass_f=40.0,
         low_pass_f=3000.0,
         pitch_floor=-60,
         debug=False,
