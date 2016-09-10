@@ -26,7 +26,7 @@ H_pitch, H_pitch_mag = lr.piptrack(
     n_fft=n_fft,
     hop_length=hop_length)
 
-features = compress(H_pitch, H_pitch_mag, n_peaks=64)
+features = compress(H_pitch, H_pitch_mag, n_peaks=16)
 
 print("features.shape=", features.shape)
 

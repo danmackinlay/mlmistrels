@@ -2,6 +2,8 @@
 
 # A utility, script, or potentially one day class to convert audio waveforms in to windowed, reduced descriptors, for some machine learning algorithm to go nuts on later
 
+# Authors: James Nichols, Darwin Vickers
+
 # Includes a test of converting then reversing the predictor to see how things sound. Uses Librosa extensively.
 
 import librosa
@@ -86,3 +88,24 @@ class BinEncode(Encode):
 
             # Random frequency in bin is given the average
         return librosa.istft(randomise_phase(D))
+
+
+class PeaksEncode(Encode):
+    hop_length = 0
+    def __init__(self, win_len = 2048):
+        from descriptors import util
+        self.win_len = win_len
+        self.hop_length = win_len/4
+
+        self.sr=22050
+
+    def encode(self, sound):
+        H_pitch, H_pitch_mag = lr.piptrack(audio, sr = self.sr, n_fft = self.win_len, hop_length = self.hop_length)
+
+        features = compress(H_pitch, H_pitch_mag, n_peaks = 16)
+
+        return features
+
+    def decode(self, A):
+        reconstruct(A, n_fft = self.win_length, sr = self.sr, hop_length = self.hop_length)
+        return A
