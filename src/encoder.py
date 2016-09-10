@@ -21,7 +21,7 @@ def randomise_phase(D):
 
     return D * rands
 
-class Encode:
+class Encode(object):
 
     def __init__(self, win_len = 2048):
         self.win_len = win_len
