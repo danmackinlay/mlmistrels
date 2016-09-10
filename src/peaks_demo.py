@@ -1,12 +1,18 @@
 import numpy as np
 import librosa as lr
-
+import descriptors.sfio as sfio
 from descriptors.util import compress
 from descriptors.reconstruct import reconstruct
+from pathlib import Path
 
 name = '303_bach'
 
-audio,sr = lr.load('../samples/%s.wav'%name)
+here = Path(__file__).resolve().parent.parent
+
+samples_dir = here.joinpath('samples')
+output_dir = here.joinpath('output')
+
+audio, sr = sfio.load(str(samples_dir.joinpath('%s.mp3' % name)))
 
 print(audio.shape)
 
@@ -21,6 +27,6 @@ print("features.shape=",features.shape)
 
 recon = reconstruct(features, n_fft = n_fft, sr = sr, hop_length = hop_length)
 
-recon = recon.astype(np.float32)
-
-audio = lr.output.write_wav('%s_reconstructed.wav'%name, recon, sr = sr)
+audio = sfio.save(
+    str(output_dir.joinpath('%s_reconstructed.mp3' % name)),
+    recon, sr = sr)
