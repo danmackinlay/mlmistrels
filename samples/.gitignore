@@ -1,3 +1,4 @@
+# ignore the side effects analysis functions sometimes cache to disk
 *.json
 *.harmonic.wav
 *.percussive.wav
