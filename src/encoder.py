@@ -2,6 +2,8 @@
 
 # A utility, script, or potentially one day class to convert audio waveforms in to windowed, reduced descriptors, for some machine learning algorithm to go nuts on later
 
+# Authors: James Nichols, Darwin Vickers
+
 # Includes a test of converting then reversing the predictor to see how things sound. Uses Librosa extensively.
 
 import librosa
