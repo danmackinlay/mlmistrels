@@ -1,6 +1,6 @@
 import librosa as lr
-import descriptors.sfio as sfio
-from descriptors.util import compress
+import sfio
+from util import compress
 from descriptors.reconstruct import reconstruct
 from pathlib import Path
 
