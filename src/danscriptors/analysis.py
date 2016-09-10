@@ -3,11 +3,10 @@ from pathlib import Path
 import numpy as np
 import json
 from . import basicfilter
-from . import sfio
-from .util import compress
+from .. import sfio
 # from functools import lru_cache
 from scipy.ndimage import median_filter
-import math
+from .array_ops import compress_peaks
 
 
 # @lru_cache(128, typed=False)
@@ -78,6 +77,9 @@ def harmonic_index(
     metadata["sr"] = sr
     # convert to spectral frames
     D = librosa.stft(y, n_fft=n_fft, hop_length=hop_length)
+    y_rms = librosa.feature.rmse(
+        S=D
+    )
 
     # Separate into harmonic and percussive. I think this preserves phase?
     H, P = librosa.decompose.hpss(D)
@@ -91,37 +93,61 @@ def harmonic_index(
 
     # Now, power spectrogram
     H_mag, H_phase = librosa.magphase(H)
-    y_harmonic_rms = librosa.feature.rmse(
-        S=H_mag
-    )
 
-    H_pitch, H_pitch_mag = librosa.piptrack(
+    H_peak_f, H_peak_mag = librosa.piptrack(
         S=H_mag, sr=sr,
         fmin=high_pass_f,
         fmax=low_pass_f
     )
 
-    H_pitch_amp = np.real(H_pitch_mag**2)
+    # First we smooth to use inter-bin information
+    H_peak_f = median_filter(H_peak_f, size=(1, pitch_median))
+    H_peak_mag = median_filter(H_peak_mag, size=(1, pitch_median))
 
-    # pitch_mag_floor = np.sort(H_pitch_amp, axis=0)[:, n_peaks:n_peaks+1]
-    # pitch_mag_mask = features['H_pitch_amp']>pitch_mag_floor
+    H_peak_rms = np.real(H_peak_mag**2)
 
     if debug:
-        plt.figure()
+        plt.figure();
         specshow(
-            librosa.logamplitude(np.abs(H_pitch_mag)**2, ref_power=np.max),
+            librosa.logamplitude(H_peak_f, ref_power=np.max),
             y_axis='log',
-            sr=sr)
-        plt.title('Pitch Spect')
+            sr=sr);
+        plt.title('Peak Freqs');
+        plt.figure();
+        specshow(
+            librosa.logamplitude(H_peak_rms, ref_power=np.max),
+            y_axis='log',
+            sr=sr);
+        plt.title('Peak amps');
+        plt.figure();
 
-    pitch_mask = H_pitch > 0
-    strong_pitch_mag = pitch_mask * H_pitch_mag
-    # How much energy in pitches?
-    y_pitch_mag_rms = librosa.feature.rmse(S=H_pitch_mag)
+    # Now we pack down to the biggest few peaks:
+    H_peak_f, H_peak_mag = compress_peaks(H_peak_f, H_peak_rms, n_peaks)
 
-    peaks = compress(H_pitch, H_pitch_mag, n_peaks=n_peaks)
+    if debug:
+        plt.figure();
+        specshow(
+            librosa.logamplitude(H_peak_f, ref_power=np.max),
+            y_axis='log',
+            sr=sr);
+        plt.title('Peak Freqs packed');
+        plt.figure();
+        specshow(
+            librosa.logamplitude(H_peak_rms, ref_power=np.max),
+            y_axis='log',
+            sr=sr);
+        plt.title('Peak amps packed');
+        # plt.figure()
+        # plt.scatter(
+        #     librosa.logamplitude(H_peak_rms, ref_power=np.max),
+        #     y_axis='log',
+        #     sr=sr)
+        # plt.title('Compressed')
+
 
     return dict(
         metadata=metadata,
-        peaks=peaks,
+        peak_f=H_peak_f,
+        peak_rms=H_peak_rms,
+        rms=y_rms
     )
