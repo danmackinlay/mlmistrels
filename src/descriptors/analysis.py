@@ -22,7 +22,6 @@ def harmonic_index(
         pitch_median=20,  # how many frames for running media?
         high_pass_f=40.0,
         low_pass_f=4000.0,
-        pitch_floor=-60,
         debug=False,
         cached=True,
         n_peaks=16,
@@ -45,7 +44,6 @@ def harmonic_index(
         high_pass_f=high_pass_f,
         low_pass_f=low_pass_f,
         pitch_median=pitch_median,
-        pitch_floor=pitch_floor,
         n_peaks=n_peaks,
     )
     sourcefile = Path(sourcefile).resolve()
@@ -98,8 +96,10 @@ def harmonic_index(
     )
 
     H_pitch, H_pitch_mag = librosa.piptrack(
-        S=H_mag, sr=sr, fmin=high_pass_f, fmax=low_pass_f,
-        threshold=10**(pitch_floor/20.0))
+        S=H_mag, sr=sr,
+        fmin=high_pass_f,
+        fmax=low_pass_f
+    )
 
     H_pitch_amp = np.real(H_pitch_mag**2)
 
