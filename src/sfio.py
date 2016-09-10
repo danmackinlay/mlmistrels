@@ -180,7 +180,7 @@ def _save_sox(
     command = [
         "sox",
         newfilename,
-        "-b", bits,
+        "-b", str(bits),
         filename,
     ]
     r = subprocess.run(command)
