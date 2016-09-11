@@ -5,9 +5,12 @@
 # Includes a test of converting then reversing the predictor to see how things sound. Uses Librosa extensively.
 
 import librosa
+
 import matplotlib.pyplot as plt
-import seaborn as sns
+#import seaborn as sns
 import numpy as np
+from descriptors.util import compress
+from descriptors.reconstruct import reconstruct 
 
 def randomise_phase(D):
     """ A function that takes reals of any and randomises all the phases,
@@ -90,20 +93,47 @@ class BinEncode(Encode):
 
 class PeaksEncode(Encode):
     hop_length = 0
+    sound_length = 0
+    
     def __init__(self, win_len = 2048):
-        from descriptors import util 
         self.win_len = win_len
         self.hop_length = win_len/4
         
         self.sr=22050
 
     def encode(self, sound):
-        H_pitch, H_pitch_mag = lr.piptrack(audio, sr = self.sr, n_fft = self.win_len, hop_length = self.hop_length)
+        self.sound_length = len(sound)
+        
+        H_pitch, H_pitch_mag = librosa.piptrack(sound, sr = self.sr, n_fft = self.win_len, hop_length = self.hop_length)
         
         features = compress(H_pitch, H_pitch_mag, n_peaks = 16)
         
         return features
         
     def decode(self, A):
-        reconstruct(A, n_fft = self.win_length, sr = self.sr, hop_length = self.hop_length)
-        return A
+        return reconstruct(A, n_fft = self.win_len, sr = self.sr, hop_length = self.hop_length)[:self.sound_length]
+
+"""    
+class CompositeEncode(Encode):
+    encoders = []
+    
+    def __init__(self, win_len = 2048, encoders = [])
+        encoders = [E(win_len = win_len) for E in encoderClasses]
+        
+    def encode(self, sound):
+        self.sound_length = len(sound)
+        
+        H_pitch, H_pitch_mag = librosa.piptrack(sound, sr = self.sr, n_fft = self.win_len, hop_length = self.hop_length)
+        
+        features = compress(H_pitch, H_pitch_mag, n_peaks = 16)
+        
+        encodings = [e.encode(audio) for e in encoders]
+        
+        return features
+        
+    def decode(self, A):
+        weights = np.array([10, 1, 10.])
+
+        recon = np.average(decodings, 0, weights)
+        return reconstruct(A, n_fft = self.win_len, sr = self.sr, hop_length = self.hop_length)[:self.sound_length]
+        """

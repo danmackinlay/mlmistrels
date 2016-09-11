@@ -29,7 +29,7 @@ def reconstruct(features, n_fft = 2048, sr = 22050, hop_length = None):
   if (hop_length == None):
     hop_length = n_fft/4
     
-  # will be a fraction longer than the original
+  # will be a fraction shorter than the original
   wave = np.zeros(lr.frames_to_samples(features.shape[0], hop_length, n_fft)[0], dtype=np.float32)
   
   for frame,feature_slice in enumerate(features):
