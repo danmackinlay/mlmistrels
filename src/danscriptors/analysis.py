@@ -1,6 +1,6 @@
 import librosa
 from pathlib import Path
-import numpy as np
+import autograd.numpy as np
 import json
 from . import basicfilter
 from .. import sfio
@@ -146,7 +146,6 @@ def harmonic_index(
         #     y_axis='log',
         #     sr=sr)
         # plt.title('Compressed')
-
 
     return dict(
         metadata=metadata,
