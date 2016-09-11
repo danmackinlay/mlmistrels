@@ -104,7 +104,10 @@ def harmonic_index(
     H_peak_f = median_filter(H_peak_f, size=(1, pitch_median))
     H_peak_mag = median_filter(H_peak_mag, size=(1, pitch_median))
 
-    H_peak_rms = np.real(H_peak_mag**2)
+    H_peak_power = np.real(H_peak_mag**2)
+    H_rms = librosa.feature.rmse(
+        S=H_peak_mag
+    )
 
     if debug:
         plt.figure();
@@ -115,14 +118,14 @@ def harmonic_index(
         plt.title('Peak Freqs');
         plt.figure();
         specshow(
-            librosa.logamplitude(H_peak_rms, ref_power=np.max),
+            librosa.logamplitude(H_peak_power, ref_power=np.max),
             y_axis='log',
             sr=sr);
         plt.title('Peak amps');
         plt.figure();
 
     # Now we pack down to the biggest few peaks:
-    H_peak_f, H_peak_rms = compress_peaks(H_peak_f, H_peak_rms, n_peaks)
+    H_peak_f, H_peak_power = compress_peaks(H_peak_f, H_peak_power, n_peaks)
 
     if debug:
         plt.figure();
@@ -133,13 +136,13 @@ def harmonic_index(
         plt.title('Peak Freqs packed');
         plt.figure();
         specshow(
-            librosa.logamplitude(H_peak_rms, ref_power=np.max),
+            librosa.logamplitude(H_peak_power, ref_power=np.max),
             y_axis='log',
             sr=sr);
         plt.title('Peak amps packed');
         # plt.figure()
         # plt.scatter(
-        #     librosa.logamplitude(H_peak_rms, ref_power=np.max),
+        #     librosa.logamplitude(H_peak_power, ref_power=np.max),
         #     y_axis='log',
         #     sr=sr)
         # plt.title('Compressed')
@@ -148,6 +151,7 @@ def harmonic_index(
     return dict(
         metadata=metadata,
         peak_f=H_peak_f,
-        peak_rms=H_peak_rms,
-        rms=y_rms
+        peak_power=H_peak_power,
+        rms=y_rms,
+        harm_rms=H_rms,
     )
