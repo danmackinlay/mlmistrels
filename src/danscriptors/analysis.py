@@ -18,7 +18,7 @@ def harmonic_index(
         output_dir=None,
         n_fft=4096,
         hop_length=1024,
-        pitch_median=20,  # how many frames for running media?
+        pitch_median=5,  # how many frames for running medians?
         high_pass_f=40.0,
         low_pass_f=4000.0,
         debug=False,
@@ -122,7 +122,7 @@ def harmonic_index(
         plt.figure();
 
     # Now we pack down to the biggest few peaks:
-    H_peak_f, H_peak_mag = compress_peaks(H_peak_f, H_peak_rms, n_peaks)
+    H_peak_f, H_peak_rms = compress_peaks(H_peak_f, H_peak_rms, n_peaks)
 
     if debug:
         plt.figure();
