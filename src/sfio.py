@@ -27,7 +27,7 @@ sox_file_extensions = {"aif", "aiff", "wav", "wave"}
 def load(filename, sr=44100, mono=True, offset=0.0, duration=None, **kwargs):
     """
     We never use librosa's importer with default settings
-    because it will erroenously load 24 bit aiffs as 16 bit wavs and explode
+    because it will erroenously load 24 bit aiffs as 24 bit wavs and explode
     without raising an error
     """
     extn = pathlib.Path(filename).suffix
@@ -49,17 +49,6 @@ def load(filename, sr=44100, mono=True, offset=0.0, duration=None, **kwargs):
             offset=offset,
             duration=duration,
             **kwargs)
-
-
-def save(filename, y, sr=44100, norm=True, **kwargs):
-    # librosa saves using scipy, which makes fat 32-bit float wavs
-    # these are big and inconvenient.
-    return _save_sox(
-        filename,
-        y,
-        sr=sr,
-        norm=norm,
-        **kwargs)
 
 
 def _load_sox(
@@ -99,31 +88,6 @@ def _load_sox(
     return wav, sr
 
 
-def _save_sox(
-        filename,
-        y,
-        sr=44100,
-        norm=True,
-        **kwargs):
-    """
-    sox this into a normal audio format
-    """
-    newfilename = tempfile.NamedTemporaryFile(suffix=".wav", delete=False).name
-    logging.info("outfile", newfilename)
-    librosa.output.write_wav(
-        newfilename, y,
-        sr=sr, norm=norm)
-    command = [
-        "sox",
-        newfilename,
-        "-b 24",
-        filename,
-    ]
-    r = subprocess.run(command)
-    r.check_returncode()
-    os.unlink(newfilename)
-
-
 def _load_ffmpeg(
         filename,
         sr=44100,
@@ -152,6 +116,7 @@ def _load_ffmpeg(
         # after input specification, we are talking about output files
         # "-af", "aresample=resampler=soxr",
         "-acodec", "pcm_s24le",
+        newfilename
     ]
     if sr:
         command = command + [
@@ -172,6 +137,93 @@ def _load_ffmpeg(
     os.unlink(newfilename)
     return wav, sr
 
+def save(filename, y, sr=44100, bits=24, norm=True, **kwargs):
+    # librosa saves using scipy, which makes fat 32-bit float wavs
+    # these are big and inconvenient.
+    extn = pathlib.Path(filename).suffix
+    if len(extn):
+        extn = str.lower(extn[1:])
+
+    if extn in sox_file_extensions:
+        return _save_sox(
+            filename,
+            y,
+            sr=sr,
+            bits=bits,
+            norm=norm,
+            **kwargs)
+    else:
+        return _save_ffmpeg(
+            filename,
+            y,
+            sr=sr,
+            bits=bits,
+            norm=norm,
+            **kwargs)
+
+
+def _save_sox(
+        filename,
+        y,
+        sr=44100,
+        norm=True,
+        bits=24,
+        **kwargs):
+    """
+    sox this into a normal audio format
+    """
+    newfilename = tempfile.NamedTemporaryFile(suffix=".wav", delete=False).name
+    logging.info("outfile", newfilename)
+    librosa.output.write_wav(
+        newfilename, y.astype('float32'),
+        sr=sr, norm=norm)
+    command = [
+        "sox",
+        newfilename,
+        "-b", str(bits),
+        filename,
+    ]
+    r = subprocess.run(command)
+    r.check_returncode()
+    os.unlink(newfilename)
+
+
+def _save_ffmpeg(
+        filename,
+        y,
+        sr=44100,
+        norm=True,
+        bits=24,
+        **kwargs):
+    """
+    ffmpeg this into a compressed audio format
+    """
+    newfilename = tempfile.NamedTemporaryFile(suffix=".wav", delete=False).name
+    librosa.output.write_wav(
+        newfilename, y.astype('float32'),
+        sr=sr, norm=norm)
+    logging.info("outfile", newfilename)
+    command = [
+        "ffmpeg"
+    ]
+    command = command + [
+        "-i", newfilename,
+        # after input specification, we are talking about output files
+        # "-af", "aresample=resampler=soxr",
+    ]
+    if sr:
+        command = command + [
+            "-ar", str(sr),
+        ]
+
+    command = command + [
+        "-y",  # force overwrite
+        filename
+    ]
+    # logging.info("ff " + repr(command))
+    r = subprocess.run(command)
+    os.unlink(newfilename)
+    r.check_returncode()
 
 def get_tmp_dir():
     global _tmp_dir

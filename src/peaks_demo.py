@@ -1,26 +1,42 @@
-import numpy as np
 import librosa as lr
-
-from descriptors.util import compress
+import sfio
+from util import compress
 from descriptors.reconstruct import reconstruct
+from pathlib import Path
 
 name = '303_bach'
 
-audio,sr = lr.load('../samples/%s.wav'%name)
+here = Path(__file__).resolve().parent.parent
+
+samples_dir = here.joinpath('samples')
+output_dir = here.joinpath('output')
+
+audio, sr = sfio.load(
+    str(samples_dir.joinpath('%s.mp3' % name))
+)
 
 print(audio.shape)
 
 n_fft = 2048
 hop_length = n_fft/4
 
-H_pitch, H_pitch_mag = lr.piptrack(audio, sr = sr, n_fft = n_fft, hop_length = hop_length)
+H_pitch, H_pitch_mag = lr.piptrack(
+    audio,
+    sr=sr,
+    n_fft=n_fft,
+    hop_length=hop_length)
 
-features = compress(H_pitch, H_pitch_mag, n_peaks = 16)
+features = compress(H_pitch, H_pitch_mag, n_peaks=16)
 
-print("features.shape=",features.shape)
+print("features.shape=", features.shape)
 
-recon = reconstruct(features, n_fft = n_fft, sr = sr, hop_length = hop_length)
+recon = reconstruct(
+    features,
+    n_fft=n_fft,
+    sr=sr,
+    hop_length=hop_length)
 
-recon = recon.astype(np.float32)
-
-audio = lr.output.write_wav('%s_reconstructed.wav'%name, recon, sr = sr)
+audio = sfio.save(
+    str(output_dir.joinpath('%s_reconstructed.mp3' % name)),
+    recon,
+    sr=sr)
