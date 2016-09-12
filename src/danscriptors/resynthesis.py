@@ -47,12 +47,12 @@ def harmonic_synthesis(
     target_power = target_features['rms']
 
     def reconstruct_peaks(gain, rate):
-        reconstruction_peak_power = source_peak_power * gain * rate
-        reconstruction_peak_f = source_peak_f * rate
+        reconstruction_peak_power = np.abs(source_peak_power * gain * rate)
+        reconstruction_peak_f = np.abs(source_peak_f * rate)
         return reconstruction_peak_power, reconstruction_peak_f
 
     def reconstruct_power(gain, rate):
-        return (gain * rate * source_power).sum()
+        return np.abs(gain * rate * source_power).sum()
 
     def dissonance_loss(gain, rate):
         reconstruct_peak_f, reconstruct_peak_power = reconstruct_peaks(
@@ -129,8 +129,9 @@ def harmonic_synthesis(
     result = minimize(
         fun,
         flat_params,
-        method='BFGS',
-        jac=grad(fun),
+        method='L-BFGS-B',
+        jac=jac,
+        bounds=[[0, None]] * (basis_size * 2),
         # callback=callback_fun,
         options=dict(
             maxiter=max_iters,
