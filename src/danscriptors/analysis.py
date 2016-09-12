@@ -80,24 +80,6 @@ def harmonic_index(
     y_rms = librosa.feature.rmse(
         S=D
     )
-    metadata["samples_per_frame"] = [
-        float(f) for f in
-        librosa.core.frames_to_samples(
-            [0, 1],
-            hop_length,
-            n_fft
-        )
-    ]
-    metadata["seconds_per_frame"] = [
-        float(f) for f in
-        librosa.core.frames_to_time(
-            [0, 1],
-            sr,
-            hop_length,
-            n_fft
-        )
-    ]
-
     # Separate into harmonic and percussive. I think this preserves phase?
     H, P = librosa.decompose.hpss(D)
     # Resynthesize the harmonic component as waveforms
