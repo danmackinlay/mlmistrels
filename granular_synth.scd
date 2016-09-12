@@ -9,7 +9,7 @@ s.waitForBoot ({
 			amp=0.25,
 			pos=0,
 			attackTime=0.05,
-			releaseTime=1.0,
+			releaseTime=5.0,
 			interp=2,
 			overlaps=4,
 			windowRandRatio=0.25,
@@ -38,7 +38,6 @@ s.waitForBoot ({
 		},
 		[],
 	).add;
-
 });
 OSCdef.newMatching(\file, {|msg, time, addr, recvPort|
 	[\file, msg].postln;
