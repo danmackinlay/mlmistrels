@@ -162,13 +162,13 @@ def harmonic_synthesis(
     gain, rate = unflatten(result.x)
 
     return dict(
-        start_frame=start_frame,
+        start_frame=start_frame.ravel(),
         start_time=librosa.core.frames_to_time(
             start_frame, sr, hop_length, n_fft
-        ),
+        ).ravel(),
         start_sample=librosa.core.frames_to_samples(
             start_frame, hop_length, n_fft
-        ),
-        gain=np.sqrt(gain),
-        rate=rate,
+        ).ravel(),
+        gain=np.sqrt(gain).ravel(),
+        rate=rate.ravel(),
     )
