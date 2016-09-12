@@ -19,7 +19,7 @@ def harmonic_synthesis(
         basis_size=8,
         gain_penalty=0.0,
         rate_penalty=0.0,
-        rms_weight=1.0,
+        rms_weight=100.0,
         dissonance_weight=1.0,
         debug=False,
         max_iters=100,
@@ -38,7 +38,7 @@ def harmonic_synthesis(
     target_peak_f = target_features['peak_f']
     target_peak_power = target_features['peak_power']
 
-    start = np.random.randint(high=source_length, size=basis_size)
+    start = np.random.randint(source_length, size=basis_size)
 
     source_peak_power = source_features['peak_power'][:, start]
     source_peak_f = source_features['peak_f'][:, start]
@@ -54,15 +54,31 @@ def harmonic_synthesis(
     def reconstruct_power(gain, rate):
         return (gain * rate * source_power).sum()
 
-    def reconstruct_loss(gain, rate, rms_weight, dissonance_weight):
+    def dissonance_loss(gain, rate):
         reconstruct_peak_f, reconstruct_peak_power = reconstruct_peaks(
             gain, rate)
-        return dissonance_weight * v_x_dissonance_sethares(
+        return v_x_dissonance_sethares(
             reconstruct_peak_f, target_peak_f,
             reconstruct_peak_power, target_peak_power
-        ) + rms_weight * (
-            np.abs(reconstruct_power(gain, rate))-target_power
+        )
+
+    def power_loss(gain, rate):
+        return np.abs(
+            reconstruct_power(gain, rate) -
+            target_power
         ) ** 2
+
+    def reconstruct_loss(gain, rate, rms_weight, dissonance_weight):
+        print('diss loss', dissonance_loss(
+            gain, rate
+        ), 'power loss', power_loss(
+            gain, rate
+        ))
+        return dissonance_weight * dissonance_loss(
+            gain, rate
+        ) + rms_weight * power_loss(
+            gain, rate
+        )
 
     def reconstruct_penalty(
             gain,
@@ -71,9 +87,9 @@ def harmonic_synthesis(
             rate_penalty):
         return gain_penalty * np.abs(
             gain
-        ) + rate_penalty * np.abs(
+        ).sum() + rate_penalty * np.abs(
             np.log2(rate)
-        )
+        ).sum()
 
     def objective(
             gain,
@@ -95,9 +111,8 @@ def harmonic_synthesis(
             rate_penalty
         )
 
-    def local_objective(
-            gain,
-            rate):
+    def local_objective(params):
+        gain, rate = params
         return objective(
             gain,
             rate,
@@ -107,7 +122,10 @@ def harmonic_synthesis(
             rate_penalty
         )
 
-    fun, unflatten, flat_params = flatten_func(local_objective, gain, rate)
+    result = local_objective([gain, rate])
+    fun, unflatten, flat_params = flatten_func(local_objective, [gain, rate])
+    jac = grad(fun)
+
     result = minimize(
         fun,
         flat_params,
