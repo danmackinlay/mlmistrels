@@ -59,8 +59,8 @@ def harmonic_index(
 
     metadata = dict(
         key=key,
-        args=argset,
         metadatafile=str(metadatafile),
+        **argset
     )
     y, sr = sfio.load(
         str(sourcefile), sr=None,

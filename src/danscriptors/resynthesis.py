@@ -17,10 +17,10 @@ def harmonic_synthesis(
         source_features,
         target_features,
         basis_size=8,
-        gain_penalty=0.0,
+        gain_penalty=10.0,
         rate_penalty=0.0,
-        rms_weight=100.0,
-        dissonance_weight=1.0,
+        rms_weight=1.0,
+        dissonance_weight=1e-8, #dissonance is large
         debug=False,
         max_iters=100,
         **kwargs):
@@ -31,6 +31,10 @@ def harmonic_synthesis(
         from librosa.display import specshow
         import matplotlib.pyplot as plt
 
+    n_fft = source_features['metadata']['n_fft']
+    hop_length = source_features['metadata']['hop_length']
+    sr = source_features['metadata']['sr']
+
     gain = np.ones((1, basis_size))/basis_size
     rate = np.ones((1, basis_size))
     source_length = source_features['peak_f'].shape[1]
@@ -38,17 +42,21 @@ def harmonic_synthesis(
     target_peak_f = target_features['peak_f']
     target_peak_power = target_features['peak_power']
 
-    start = np.random.randint(source_length, size=basis_size)
+    start_frame = np.random.randint(source_length, size=basis_size)
 
-    source_peak_power = source_features['peak_power'][:, start]
-    source_peak_f = source_features['peak_f'][:, start]
+    source_peak_power = source_features['peak_power'][:, start_frame]
+    source_peak_f = source_features['peak_f'][:, start_frame]
 
-    source_power = source_features['rms'][:, start]
+    source_power = source_features['rms'][:, start_frame]
     target_power = target_features['rms']
 
     def reconstruct_peaks(gain, rate):
-        reconstruction_peak_power = np.abs(source_peak_power * gain * rate)
-        reconstruction_peak_f = np.abs(source_peak_f * rate)
+        reconstruction_peak_power = np.abs(
+            source_peak_power * gain * rate
+        ).ravel()
+        reconstruction_peak_f = np.abs(
+            source_peak_f * rate
+        ).ravel()
         return reconstruction_peak_power, reconstruction_peak_f
 
     def reconstruct_power(gain, rate):
@@ -69,16 +77,23 @@ def harmonic_synthesis(
         ) ** 2
 
     def reconstruct_loss(gain, rate, rms_weight, dissonance_weight):
-        print('diss loss', dissonance_loss(
-            gain, rate
-        ), 'power loss', power_loss(
-            gain, rate
-        ))
-        return dissonance_weight * dissonance_loss(
-            gain, rate
-        ) + rms_weight * power_loss(
+        diss_loss = dissonance_loss(
             gain, rate
         )
+        pow_loss = power_loss(
+            gain, rate
+        )
+        total_loss = dissonance_weight * diss_loss + rms_weight * pow_loss
+        if debug:
+            print(
+                'gain', gain,
+                'rate', rate)
+            print(
+                'loss', total_loss,
+                'diss loss', diss_loss,
+                'power loss', pow_loss)
+
+        return total_loss
 
     def reconstruct_penalty(
             gain,
@@ -87,9 +102,9 @@ def harmonic_synthesis(
             rate_penalty):
         return gain_penalty * np.abs(
             gain
-        ).sum() + rate_penalty * np.abs(
+        ).mean() + rate_penalty * np.abs(
             np.log2(rate)
-        ).sum()
+        ).mean()
 
     def objective(
             gain,
@@ -139,4 +154,16 @@ def harmonic_synthesis(
             gtol=1e-3
         )
     )
-    return unflatten(result.x)
+
+    gain, rate = unflatten(result.x)
+
+    return dict(
+        start_time=librosa.core.frames_to_time(
+            start_frame, sr, hop_length, n_fft
+        ),
+        start_sample=librosa.core.frames_to_samples(
+            start_frame, hop_length, n_fft
+        ),
+        gain=np.sqrt(gain),
+        rate=rate,
+    )
