@@ -5,4 +5,5 @@ scikits.samplerate>=0.3.3
 audioread>=2.1.2
 shortuuid>=0.4.3
 autograd>=1.1.6
+pyliblo>=0.10.0
 #tensorflow is a manual install because of GPU libraries etc. good luck

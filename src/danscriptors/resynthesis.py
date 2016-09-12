@@ -1,3 +1,7 @@
+"""
+Concatenative/basis synthesis of audio from other audio
+"""
+
 import librosa
 from pathlib import Path
 import json
@@ -158,6 +162,7 @@ def harmonic_synthesis(
     gain, rate = unflatten(result.x)
 
     return dict(
+        start_frame=start_frame,
         start_time=librosa.core.frames_to_time(
             start_frame, sr, hop_length, n_fft
         ),

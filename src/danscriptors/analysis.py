@@ -1,3 +1,10 @@
+"""
+Analysis of sound files into spectral-peak and RMs features
+
+TODO: add frame-difference-based features to favour trajectory matching?
+"""
+
+
 import librosa
 from pathlib import Path
 import autograd.numpy as np
