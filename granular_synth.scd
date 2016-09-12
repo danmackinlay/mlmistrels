@@ -67,3 +67,5 @@ OSCdef.trace(true, true);
 
 b.plot;
 b= MP3.readToBuffer(s, '/Users/dan/Source/mlmistrels/samples/clarinet.mp3');
+s.record;
+s.stopRecording;
