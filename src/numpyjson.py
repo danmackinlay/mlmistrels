@@ -14,3 +14,6 @@ def encode_numpy(obj):
         return obj.tolist()
     else:
         return json.JSONEncoder.default(None, obj)
+
+def dumps(obj, *args, **kwargs):
+    return json.dumps(obj, default=encode_numpy, *args, **kwargs)
